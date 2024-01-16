@@ -18,21 +18,22 @@ async function buyListedTokens(connection) {
   try {
     const data = await db.getData("/");
     Object.keys(data).reduce((p, item) => {
-      return p.then(() => {
-        const values = data[item];
-        if (values[3].bought === false) {
-          return buyTokens(
-            keypair,
-            SOL_PER_SNIPE,
-            connection,
-            values[2].address
-          )
-            .then(() => {
-              const newValues = values;
-              newValues[3].bought = true;
-              return db.push(`/${values[0].address}`, newValues);
-            })
-            .catch(console.error);
+      return p.then(async () => {
+        try {
+          const values = data[item];
+          if (values[3].bought === false) {
+            await buyTokens(
+              keypair,
+              SOL_PER_SNIPE,
+              connection,
+              values[2].address
+            );
+            const newValues = values;
+            newValues[3].bought = true;
+            await db.push(`/${values[0].address}`, newValues);
+          }
+        } catch (error) {
+          console.error(error);
         }
         return false;
       });

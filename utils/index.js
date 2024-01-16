@@ -270,6 +270,7 @@ async function sellTokens(keypair, tokenInput, connection, pairAccount) {
         prices.amountIn,
         prices.minAmountOut
       );
+      return;
     } else {
       throw new Error("Token Does not meet Liquidity Thresold.");
     }
@@ -291,6 +292,7 @@ async function buyTokens(keypair, tokenInput, connection, pairAccount) {
         prices.amountIn,
         prices.minAmountOut
       );
+      return;
     } else {
       throw new Error("Token Does not meet Liquidity Thresold.");
     }

@@ -56,4 +56,4 @@ const connection = getConnection();
 // sellMyTokens(connection).catch(console.error);
 setInterval(() => {
   sellMyTokens(connection).catch(console.error);
-}, 300000);
+}, 60000);
