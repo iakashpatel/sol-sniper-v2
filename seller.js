@@ -39,9 +39,9 @@ async function sellMyTokens(connection) {
             );
           } catch (error) {
             console.log(error);
-            const newValues = Object.assign([], data);
-            newValues[3].error = true;
-            await db.push(`/${newValues[0].address}`, newValues);
+            // const newValues = Object.assign([], data);
+            // newValues[3].error = true;
+            // await db.push(`/${newValues[0].address}`, newValues);
           }
         }
       } catch (error) {
@@ -53,7 +53,7 @@ async function sellMyTokens(connection) {
 }
 
 const connection = getConnection();
-sellMyTokens(connection).catch(console.error);
-// setInterval(() => {
-//   sellMyTokens(connection).catch(console.error);
-// }, 60000);
+// sellMyTokens(connection).catch(console.error);
+setInterval(() => {
+  sellMyTokens(connection).catch(console.error);
+}, 300000);

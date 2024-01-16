@@ -21,6 +21,10 @@ const {
   Connection,
 } = require("@solana/web3.js");
 
+const SOL_PER_SNIPE = "0.01";
+const SOL_BUY_LIQ_FILTER = 50;
+const SOL_SELL_LIQ_FILTER = 75;
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function formatAmmKeysById(connection, id) {
@@ -102,6 +106,10 @@ async function calcAmountOut(
 ) {
   const poolInfo = await Liquidity.fetchInfo({ connection, poolKeys });
 
+  const solLiquidity =
+    poolInfo.quoteReserve.toNumber() / 10 ** poolInfo.quoteDecimals;
+  let liqFilter = solLiquidity >= SOL_BUY_LIQ_FILTER;
+
   let programId = poolKeys.programId;
   let currencyInMint = poolKeys.baseMint;
   let currencyInDecimals = poolInfo.baseDecimals;
@@ -113,6 +121,8 @@ async function calcAmountOut(
     currencyInDecimals = poolInfo.quoteDecimals;
     currencyOutMint = poolKeys.baseMint;
     currencyOutDecimals = poolInfo.baseDecimals;
+  } else {
+    liqFilter = solLiquidity >= SOL_SELL_LIQ_FILTER;
   }
 
   const currencyIn = new Token(programId, currencyInMint, currencyInDecimals);
@@ -133,6 +143,7 @@ async function calcAmountOut(
   });
 
   return {
+    liqFilter,
     amountIn,
     ...quote,
   };
@@ -201,13 +212,13 @@ async function quote(
   swapInDirection = false // false => SOL TO XXX ;; true => XXX to SOL
 ) {
   const inputNumber = parseFloat(input);
-  const { amountIn, minAmountOut } = await calcAmountOut(
+  const { amountIn, minAmountOut, liqFilter } = await calcAmountOut(
     connection,
     poolKeys,
     inputNumber,
     swapInDirection
   );
-  return { amountIn, minAmountOut };
+  return { amountIn, minAmountOut, liqFilter };
 }
 
 async function swap(connection, keypair, poolKeys, amountIn, minAmountOut) {
@@ -251,25 +262,7 @@ async function sellTokens(keypair, tokenInput, connection, pairAccount) {
   if (poolKeys) {
     console.log("Found Pool Keys");
     const prices = await quote(connection, poolKeys, tokenInput, true);
-    await swap(
-      connection,
-      keypair,
-      poolKeys,
-      prices.amountIn,
-      prices.minAmountOut
-    );
-  } else {
-    console.log("Pool Info Not Found.");
-  }
-}
-
-async function buyTokens(keypair, tokenInput, connection, pairAccount) {
-  try {
-    // let connection = getConnection();
-    const poolKeys = await getPoolInfo(connection, pairAccount);
-    if (poolKeys) {
-      console.log("Found Pool Keys");
-      const prices = await quote(connection, poolKeys, tokenInput, false);
+    if (prices.liqFilter) {
       await swap(
         connection,
         keypair,
@@ -278,10 +271,31 @@ async function buyTokens(keypair, tokenInput, connection, pairAccount) {
         prices.minAmountOut
       );
     } else {
-      console.log("Pool Info Not Found.");
+      throw new Error("Token Does not meet Liquidity Thresold.");
     }
-  } catch (error) {
-    console.error(error);
+  } else {
+    throw new Error("Pool Info Not Found.");
+  }
+}
+
+async function buyTokens(keypair, tokenInput, connection, pairAccount) {
+  const poolKeys = await getPoolInfo(connection, pairAccount);
+  if (poolKeys) {
+    console.log("Found Pool Keys");
+    const prices = await quote(connection, poolKeys, tokenInput, false);
+    if (prices.liqFilter) {
+      await swap(
+        connection,
+        keypair,
+        poolKeys,
+        prices.amountIn,
+        prices.minAmountOut
+      );
+    } else {
+      throw new Error("Token Does not meet Liquidity Thresold.");
+    }
+  } else {
+    throw new Error("Pool Info Not Found.");
   }
 }
 
@@ -297,4 +311,5 @@ module.exports = {
   generateExplorerUrl,
   sellTokens,
   buyTokens,
+  SOL_PER_SNIPE,
 };

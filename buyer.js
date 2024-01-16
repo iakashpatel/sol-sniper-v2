@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { Keypair } = require("@solana/web3.js");
 const { JsonDB, Config } = require("node-json-db");
-const { buyTokens, getConnection } = require("./utils");
+const { buyTokens, getConnection, SOL_PER_SNIPE } = require("./utils");
 const bs58 = require("bs58");
 
 // Local JSON DB.
@@ -13,8 +13,6 @@ const keypair = Keypair.fromSecretKey(secretKey);
 console.log("=================Buyer Program=============================");
 console.log("address: ", keypair.publicKey);
 console.log("===========================================================");
-
-const SOL_PER_SNIPE = "0.01";
 
 async function buyListedTokens(connection) {
   try {
@@ -45,7 +43,6 @@ async function buyListedTokens(connection) {
 }
 
 const connection = getConnection();
-buyListedTokens(connection).catch(console.error);
-// setInterval(() => {
-//   buyListedTokens(connection).catch(console.error);
-// }, 60000);
+setInterval(() => {
+  buyListedTokens(connection).catch(console.error);
+}, 60000);
