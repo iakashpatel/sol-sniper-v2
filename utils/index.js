@@ -15,7 +15,11 @@ const {
   TxVersion,
 } = require("@raydium-io/raydium-sdk");
 
-const { PublicKey, VersionedTransaction } = require("@solana/web3.js");
+const {
+  PublicKey,
+  VersionedTransaction,
+  Connection,
+} = require("@solana/web3.js");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -118,7 +122,7 @@ async function calcAmountOut(
     currencyOutMint,
     currencyOutDecimals
   );
-  const slippage = new Percent(1, 100); // 1% slippage
+  const slippage = new Percent(5, 100); // 5% slippage
 
   const quote = Liquidity.computeAmountOut({
     poolKeys,
@@ -176,10 +180,121 @@ async function buildAndSendTx(
 
   return await sendTx(connection, wallet, willSendTx, options);
 }
+
+// Replace HTTP_URL & WSS_URL with QuickNode HTTPS and WSS Solana Mainnet endpoint
+const getConnection = () => {
+  const SESSION_HASH = "AKASHPATEL" + Math.ceil(Math.random() * 1e9); // Random unique identifier for your session
+  return new Connection(process.env.HTTPS_ENDPOINT, {
+    wsEndpoint: process.env.WSS_ENDPOINT,
+    httpHeaders: { "x-session-hash": SESSION_HASH },
+  });
+};
+
+function generateExplorerUrl(txId) {
+  return `https://solscan.io/tx/${txId}`;
+}
+
+async function quote(
+  connection,
+  poolKeys,
+  input,
+  swapInDirection = false // false => SOL TO XXX ;; true => XXX to SOL
+) {
+  const inputNumber = parseFloat(input);
+  const { amountIn, minAmountOut } = await calcAmountOut(
+    connection,
+    poolKeys,
+    inputNumber,
+    swapInDirection
+  );
+  return { amountIn, minAmountOut };
+}
+
+async function swap(connection, keypair, poolKeys, amountIn, minAmountOut) {
+  const tokenAccounts = await getTokenAccountsByOwner(
+    connection,
+    keypair.publicKey
+  );
+  const simpleSwapInstruction = await Liquidity.makeSwapInstructionSimple({
+    connection,
+    poolKeys,
+    userKeys: {
+      tokenAccounts,
+      owner: keypair.publicKey,
+    },
+    amountIn,
+    amountOut: minAmountOut,
+    fixedSide: "in",
+  });
+
+  console.log(
+    "amountOut:",
+    minAmountOut.toFixed(),
+    "  minAmountOut: ",
+    amountIn.toFixed()
+  );
+
+  const txids = await buildAndSendTx(
+    connection,
+    keypair,
+    simpleSwapInstruction.innerTransactions
+  );
+  console.log("Transaction sent");
+  txids.map((item) => {
+    console.log(generateExplorerUrl(item));
+  });
+  console.log("Success");
+}
+
+async function sellTokens(keypair, tokenInput, connection, pairAccount) {
+  const poolKeys = await getPoolInfo(connection, pairAccount);
+  if (poolKeys) {
+    console.log("Found Pool Keys");
+    const prices = await quote(connection, poolKeys, tokenInput, true);
+    await swap(
+      connection,
+      keypair,
+      poolKeys,
+      prices.amountIn,
+      prices.minAmountOut
+    );
+  } else {
+    console.log("Pool Info Not Found.");
+  }
+}
+
+async function buyTokens(keypair, tokenInput, connection, pairAccount) {
+  try {
+    // let connection = getConnection();
+    const poolKeys = await getPoolInfo(connection, pairAccount);
+    if (poolKeys) {
+      console.log("Found Pool Keys");
+      const prices = await quote(connection, poolKeys, tokenInput, false);
+      await swap(
+        connection,
+        keypair,
+        poolKeys,
+        prices.amountIn,
+        prices.minAmountOut
+      );
+    } else {
+      console.log("Pool Info Not Found.");
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 module.exports = {
   sleep,
   getPoolInfo,
   calcAmountOut,
   getTokenAccountsByOwner,
   buildAndSendTx,
+  getConnection,
+  swap,
+  quote,
+  generateExplorerUrl,
+  sellTokens,
+  buyTokens,
 };
