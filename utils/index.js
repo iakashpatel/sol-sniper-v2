@@ -22,8 +22,8 @@ const {
 } = require("@solana/web3.js");
 
 const SOL_PER_SNIPE = "0.01";
-const SOL_BUY_LIQ_FILTER = 50;
-const SOL_SELL_LIQ_FILTER = 75;
+const SOL_BUY_LIQ_FILTER = 25;
+const SOL_SELL_LIQ_FILTER = SOL_BUY_LIQ_FILTER * 1.5;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
