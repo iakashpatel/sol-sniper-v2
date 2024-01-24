@@ -1,12 +1,9 @@
 require("dotenv").config();
 const { PublicKey } = require("@solana/web3.js");
-const { JsonDB, Config } = require("node-json-db");
-const { getConnection, generateExplorerUrl } = require("./utils");
+const { getConnection, generateExplorerUrl, buyerQueue } = require("./utils");
 
-// Local JSON DB.
-const db = new JsonDB(new Config("tokens", true, false, "/"));
-const RAYDIUM_PUBLIC_KEY = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
 let credits = 0;
+const RAYDIUM_PUBLIC_KEY = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
 const raydium = new PublicKey(RAYDIUM_PUBLIC_KEY);
 
 // Monitor logs
@@ -59,8 +56,7 @@ async function fetchRaydiumAccounts(txId, connection) {
   ];
   console.log("New LP Found");
   console.log(generateExplorerUrl(txId));
-  console.table(displayData);
-  await db.push(`/${tokenAAccount.toBase58()}`, displayData);
+  buyerQueue.createJob(displayData).save();
   console.log("Total QuickNode Credits Used in this session:", credits);
   return;
 }

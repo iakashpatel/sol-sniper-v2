@@ -14,6 +14,7 @@ const {
   SPL_MINT_LAYOUT,
   TxVersion,
 } = require("@raydium-io/raydium-sdk");
+const Queue = require("bee-queue");
 
 const {
   PublicKey,
@@ -25,6 +26,12 @@ const SOL_PER_SNIPE = "0.005";
 const SOL_BUY_LIQ_FILTER = 20;
 const SOL_SELL_LIQ_FILTER = SOL_BUY_LIQ_FILTER * 1.5;
 
+const queueOptions = {
+  removeOnSuccess: true,
+};
+
+const buyerQueue = new Queue("solbuyer", queueOptions);
+const sellerQueue = new Queue("solseller", queueOptions);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function formatAmmKeysById(connection, id) {
@@ -255,6 +262,7 @@ async function swap(connection, keypair, poolKeys, amountIn, minAmountOut) {
     console.log(generateExplorerUrl(item));
   });
   console.log("Success");
+  return minAmountOut.toFixed(2);
 }
 
 async function sellTokens(keypair, tokenInput, connection, pairAccount) {
@@ -285,14 +293,14 @@ async function buyTokens(keypair, tokenInput, connection, pairAccount) {
     console.log("Found Pool Keys");
     const prices = await quote(connection, poolKeys, tokenInput, false);
     if (prices.liqFilter) {
-      await swap(
+      const result = await swap(
         connection,
         keypair,
         poolKeys,
         prices.amountIn,
         prices.minAmountOut
       );
-      return;
+      return result;
     } else {
       throw new Error("Token Does not meet Liquidity Thresold.");
     }
@@ -314,4 +322,6 @@ module.exports = {
   sellTokens,
   buyTokens,
   SOL_PER_SNIPE,
+  buyerQueue,
+  sellerQueue,
 };

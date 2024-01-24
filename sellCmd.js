@@ -1,25 +1,23 @@
 require("dotenv").config();
 const { Keypair } = require("@solana/web3.js");
-const { sellTokens, getConnection, sellerQueue } = require("./utils");
+const { sellTokens, getConnection } = require("./utils");
 const bs58 = require("bs58");
 
 // addy: DjcG3NNTLAg62uJi5mLmAHoGPGq21kSF8dTPByHgVJHq
 const secretKey = bs58.decode(process.env.PRIVATE_KEY);
 const keypair = Keypair.fromSecretKey(secretKey);
+console.log("=================Seller Program============================");
 console.log("address: ", keypair.publicKey);
-const connection = getConnection();
+console.log("===========================================================");
 
-sellerQueue.process(3, (job, done) => {
-  setTimeout(async () => {
-    console.log("========================Selling=============================");
-    console.table(job.data.buyerData);
-    console.log("===========================================================");
+async function sellMyTokens(connection, token, amount) {
+  try {
     try {
       const result = await sellTokens(
         keypair,
-        job.data.amount.toString(),
+        parseFloat(amount).toFixed(),
         connection,
-        job.data.buyerData[2].address
+        token
       );
       if (result) {
         console.log("sold successfully.");
@@ -27,8 +25,12 @@ sellerQueue.process(3, (job, done) => {
         console.log("failed to sell.");
       }
     } catch (error) {
-      console.error(error);
+      console.log(error);
     }
-    return done();
-  }, 300000);
-});
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const connection = getConnection();
+sellMyTokens(connection, process.argv[2], process.argv[3]).catch(console.error);
