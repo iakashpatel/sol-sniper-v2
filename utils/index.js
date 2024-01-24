@@ -129,7 +129,8 @@ async function calcAmountOut(
     currencyOutMint = poolKeys.baseMint;
     currencyOutDecimals = poolInfo.baseDecimals;
   } else {
-    liqFilter = solLiquidity >= SOL_SELL_LIQ_FILTER;
+    // liqFilter = solLiquidity >= SOL_SELL_LIQ_FILTER;
+    liqFilter = solLiquidity >= 0;
   }
 
   const currencyIn = new Token(programId, currencyInMint, currencyInDecimals);
