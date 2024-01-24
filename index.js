@@ -55,7 +55,6 @@ async function fetchRaydiumAccounts(txId, connection) {
     { Token: "A", address: tokenAAccount.toBase58() },
     { Token: "B", address: tokenBAccount.toBase58() },
     { Token: "Pair", address: pairAccount.toBase58() },
-    { bought: false, error: false },
   ];
   console.log("New LP Found");
   console.log(generateExplorerUrl(txId));

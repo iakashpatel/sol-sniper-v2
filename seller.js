@@ -9,7 +9,8 @@ const {
 const bs58 = require("bs58");
 
 // Local JSON DB.
-const db = new JsonDB(new Config("tokens", true, false, "/"));
+const buyerDb = new JsonDB(new Config("token_bought", true, false, "/"));
+const sellerDb = new JsonDB(new Config("token_sold", true, false, "/"));
 
 // addy: DjcG3NNTLAg62uJi5mLmAHoGPGq21kSF8dTPByHgVJHq
 const secretKey = bs58.decode(process.env.PRIVATE_KEY);
@@ -26,10 +27,11 @@ async function sellMyTokens(connection) {
 
   tokenAccounts.reduce((p, item) => {
     return p.then(async () => {
+      const token = item.accountInfo.mint.toString();
       try {
-        // console.log(item);
-        const data = await db.getData(`/${item.accountInfo.mint.toString()}`);
-        if (data[3].error === false) {
+        const data = await buyerDb.getData(`/${token}`);
+        const soldData = await sellerDb.getData("/");
+        if (soldData[item] === undefined) {
           try {
             await sellTokens(
               keypair,
@@ -37,11 +39,9 @@ async function sellMyTokens(connection) {
               connection,
               data[2].address
             );
+            await sellerDb.push(`/${data[0].address}`, data);
           } catch (error) {
             console.log(error);
-            // const newValues = Object.assign([], data);
-            // newValues[3].error = true;
-            // await db.push(`/${newValues[0].address}`, newValues);
           }
         }
       } catch (error) {
@@ -53,7 +53,6 @@ async function sellMyTokens(connection) {
 }
 
 const connection = getConnection();
-// sellMyTokens(connection).catch(console.error);
 setInterval(() => {
   sellMyTokens(connection).catch(console.error);
 }, 60000);
