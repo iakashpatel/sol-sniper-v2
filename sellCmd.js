@@ -13,12 +13,7 @@ console.log("===========================================================");
 async function sellMyTokens(connection, token, amount) {
   try {
     try {
-      const result = await sellTokens(
-        keypair,
-        parseFloat(amount).toFixed(),
-        connection,
-        token
-      );
+      const result = await sellTokens(keypair, amount, connection, token);
       if (result) {
         console.log("sold successfully.");
       } else {
