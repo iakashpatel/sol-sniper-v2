@@ -270,9 +270,9 @@ async function sellTokens(keypair, tokenInput, connection, pairAccount) {
         prices.amountIn,
         prices.minAmountOut
       );
-      return;
+      return true;
     } else {
-      throw new Error("Token Does not meet Liquidity Thresold.");
+      return false;
     }
   } else {
     throw new Error("Pool Info Not Found.");

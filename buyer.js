@@ -20,10 +20,13 @@ async function buyListedTokens(connection) {
     const data = await db.getData("/");
     Object.keys(data).reduce((p, item) => {
       return p.then(async () => {
-        try {
-          const boughtData = await buyerDb.getData("/");
-          const values = data[item];
-          if (boughtData[item] === undefined) {
+        const boughtData = await buyerDb.getData("/");
+        const values = data[item];
+        if (
+          boughtData[item] === undefined ||
+          [undefined, false].includes(boughtData[item][3]["error"])
+        ) {
+          try {
             await buyTokens(
               keypair,
               SOL_PER_SNIPE,
@@ -31,9 +34,12 @@ async function buyListedTokens(connection) {
               values[2].address
             );
             await buyerDb.push(`/${values[0].address}`, values);
+          } catch (error) {
+            console.error(error);
+            const newValues = Object.assign([], values);
+            newValues[3].error = true;
+            await buyerDb.push(`/${values[0].address}`, newValues);
           }
-        } catch (error) {
-          console.error(error);
         }
         return false;
       });

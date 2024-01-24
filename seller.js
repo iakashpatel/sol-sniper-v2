@@ -29,19 +29,27 @@ async function sellMyTokens(connection) {
     return p.then(async () => {
       const token = item.accountInfo.mint.toString();
       try {
-        const data = await buyerDb.getData(`/${token}`);
+        const values = await buyerDb.getData(`/${token}`);
         const soldData = await sellerDb.getData("/");
-        if (soldData[item] === undefined) {
+        if (
+          soldData[item] === undefined ||
+          [undefined, false].includes(soldData[item][3]["error"])
+        ) {
           try {
-            await sellTokens(
+            const result = await sellTokens(
               keypair,
               item.accountInfo.amount.toString(),
               connection,
-              data[2].address
+              values[2].address
             );
-            await sellerDb.push(`/${data[0].address}`, data);
+            if (result) {
+              await sellerDb.push(`/${values[0].address}`, values);
+            }
           } catch (error) {
             console.log(error);
+            const newValues = Object.assign([], values);
+            newValues[3].error = true;
+            await sellerDb.push(`/${values[0].address}`, newValues);
           }
         }
       } catch (error) {
