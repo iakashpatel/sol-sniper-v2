@@ -9,7 +9,7 @@ const keypair = Keypair.fromSecretKey(secretKey);
 console.log("address: ", keypair.publicKey);
 const connection = getConnection();
 
-sellerQueue.process(3, (job, done) => {
+sellerQueue.process(1, (job, done) => {
   setTimeout(async () => {
     console.log("========================Selling=============================");
     console.table(job.data.buyerData);
@@ -30,5 +30,5 @@ sellerQueue.process(3, (job, done) => {
       console.error(error);
     }
     return done();
-  }, 300000);
+  }, 3000);
 });

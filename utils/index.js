@@ -22,8 +22,8 @@ const {
   Connection,
 } = require("@solana/web3.js");
 
-const SOL_PER_SNIPE = "0.005";
-const SOL_BUY_LIQ_FILTER = 20;
+const SOL_PER_SNIPE = "0.02";
+const SOL_BUY_LIQ_FILTER = 10;
 const SOL_SELL_LIQ_FILTER = SOL_BUY_LIQ_FILTER * 1.5;
 
 const queueOptions = {
@@ -130,7 +130,7 @@ async function calcAmountOut(
     currencyOutDecimals = poolInfo.baseDecimals;
   } else {
     // liqFilter = solLiquidity >= SOL_SELL_LIQ_FILTER;
-    liqFilter = solLiquidity >= 0;
+    liqFilter = true;
   }
 
   const currencyIn = new Token(programId, currencyInMint, currencyInDecimals);
@@ -140,7 +140,7 @@ async function calcAmountOut(
     currencyOutMint,
     currencyOutDecimals
   );
-  const slippage = new Percent(5, 100); // 5% slippage
+  const slippage = new Percent(50, 100); // 50% slippage
 
   const quote = Liquidity.computeAmountOut({
     poolKeys,
