@@ -1,12 +1,6 @@
 require("dotenv").config();
 const { Keypair } = require("@solana/web3.js");
-const {
-  buyTokens,
-  sellerQueue,
-  getConnection,
-  SOL_PER_SNIPE,
-  buyerQueue,
-} = require("./utils");
+const { buyTokens, getConnection, buyerQueue } = require("./utils");
 const { JsonDB, Config } = require("node-json-db");
 const bs58 = require("bs58");
 
@@ -24,19 +18,13 @@ buyerQueue.process(1, async (job, done) => {
   console.log("===========================================================");
 
   try {
-    const amount = await buyTokens(
+    await buyTokens(
       keypair,
-      SOL_PER_SNIPE,
+      job.data[3].solAmount,
       connection,
       job.data[2].address
     );
     await buyerDb.push(`/${job.data[2].address}`, job.data);
-    sellerQueue
-      .createJob({
-        buyerData: job.data,
-        amount,
-      })
-      .save();
   } catch (error) {
     console.error(error);
   }

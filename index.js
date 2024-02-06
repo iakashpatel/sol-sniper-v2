@@ -1,10 +1,13 @@
 require("dotenv").config();
 const { PublicKey } = require("@solana/web3.js");
 const { getConnection, generateExplorerUrl, buyerQueue } = require("./utils");
+const prompt = require("prompt-sync")({ sigint: true });
 
 let credits = 0;
 const RAYDIUM_PUBLIC_KEY = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
 const raydium = new PublicKey(RAYDIUM_PUBLIC_KEY);
+const tokenAddress = prompt("token address:");
+const solAmount = prompt("sol amount:");
 
 // Monitor logs
 async function main(connection, programAddress) {
@@ -52,11 +55,16 @@ async function fetchRaydiumAccounts(txId, connection) {
     { Token: "A", address: tokenAAccount.toBase58() },
     { Token: "B", address: tokenBAccount.toBase58() },
     { Token: "Pair", address: pairAccount.toBase58() },
-    { error: false },
+    { error: false, solAmount },
   ];
   console.log("New LP Found");
   console.log(generateExplorerUrl(txId));
-  buyerQueue.createJob(displayData).save();
+  if (
+    tokenAAccount.toString() === tokenAddress ||
+    tokenBAccount.toString() === tokenAddress
+  ) {
+    buyerQueue.createJob(displayData).save();
+  }
   console.log("Total QuickNode Credits Used in this session:", credits);
   return;
 }
